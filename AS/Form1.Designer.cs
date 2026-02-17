@@ -28,219 +28,261 @@
         /// </summary>
         private void InitializeComponent()
         {
-            BtnCrearArchivo = new Button();
-            BtnMoverArchivo = new Button();
-            labelDatos = new Label();
-            btnEliminar = new Button();
-            btnCopiar = new Button();
-            btnVerPropiedades = new Button();
-            dgvDatos = new DataGridView();
-            dgvPropiedades = new DataGridView();
-            btnAbrir = new Button();
+            btnAbrirArchivo = new Button();
+            btnAgregarRegistro = new Button();
+            btnEliminarRegistro = new Button();
+            btnBuscar = new Button();
             btnModificar = new Button();
+            btnCrearArchivo = new Button();
+            dgvRegistros = new DataGridView();
+            txtNombre = new TextBox();
+            txtCarrera = new TextBox();
+            lblNombre = new Label();
+            lblCarrera = new Label();
+            lblArchivoActual = new Label();
+            txtBuscar = new TextBox();
+            lblBuscar = new Label();
+            btnPropiedades = new Button();
             btnCrearCarpeta = new Button();
             btnRenombrar = new Button();
-            btnAgregarInfo = new Button();
-            btnEliminarInfo = new Button();
-            ((System.ComponentModel.ISupportInitialize)dgvDatos).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)dgvPropiedades).BeginInit();
+            btnGuardarCambios = new Button();
+            btnCopiarArchivo = new Button();
+            ((System.ComponentModel.ISupportInitialize)dgvRegistros).BeginInit();
             SuspendLayout();
             // 
-            // BtnCrearArchivo
+            // btnAbrirArchivo
             // 
-            BtnCrearArchivo.Location = new Point(36, 388);
-            BtnCrearArchivo.Margin = new Padding(3, 2, 3, 2);
-            BtnCrearArchivo.Name = "BtnCrearArchivo";
-            BtnCrearArchivo.Size = new Size(158, 46);
-            BtnCrearArchivo.TabIndex = 2;
-            BtnCrearArchivo.Text = "Crear Archivo";
-            BtnCrearArchivo.UseVisualStyleBackColor = true;
-            BtnCrearArchivo.Click += BtnCrearArchivo_click;
+            btnAbrirArchivo.Location = new Point(138, 12);
+            btnAbrirArchivo.Name = "btnAbrirArchivo";
+            btnAbrirArchivo.Size = new Size(120, 40);
+            btnAbrirArchivo.TabIndex = 0;
+            btnAbrirArchivo.Text = "Abrir Archivo";
+            btnAbrirArchivo.UseVisualStyleBackColor = true;
+            btnAbrirArchivo.Click += btnAbrirArchivo_Click;
             // 
-            // BtnMoverArchivo
+            // btnAgregarRegistro
             // 
-            BtnMoverArchivo.Location = new Point(388, 388);
-            BtnMoverArchivo.Margin = new Padding(3, 2, 3, 2);
-            BtnMoverArchivo.Name = "BtnMoverArchivo";
-            BtnMoverArchivo.Size = new Size(156, 46);
-            BtnMoverArchivo.TabIndex = 3;
-            BtnMoverArchivo.Text = "Mover Archivo";
-            BtnMoverArchivo.UseVisualStyleBackColor = true;
-            BtnMoverArchivo.Click += BtnMoverArchivo_Click;
+            btnAgregarRegistro.Location = new Point(390, 12);
+            btnAgregarRegistro.Name = "btnAgregarRegistro";
+            btnAgregarRegistro.Size = new Size(120, 40);
+            btnAgregarRegistro.TabIndex = 7;
+            btnAgregarRegistro.Text = "Agregar";
+            btnAgregarRegistro.UseVisualStyleBackColor = true;
+            btnAgregarRegistro.Click += btnAgregarRegistro_Click;
             // 
-            // labelDatos
+            // btnEliminarRegistro
             // 
-            labelDatos.AutoSize = true;
-            labelDatos.Location = new Point(10, 9);
-            labelDatos.Name = "labelDatos";
-            labelDatos.Size = new Size(97, 15);
-            labelDatos.TabIndex = 0;
-            labelDatos.Text = "Escriba los datos:";
+            btnEliminarRegistro.Location = new Point(12, 58);
+            btnEliminarRegistro.Name = "btnEliminarRegistro";
+            btnEliminarRegistro.Size = new Size(120, 40);
+            btnEliminarRegistro.TabIndex = 8;
+            btnEliminarRegistro.Text = "Eliminar Registro";
+            btnEliminarRegistro.UseVisualStyleBackColor = true;
+            btnEliminarRegistro.Click += btnEliminarRegistro_Click;
             // 
-            // btnEliminar
+            // btnBuscar
             // 
-            btnEliminar.Location = new Point(206, 388);
-            btnEliminar.Margin = new Padding(3, 2, 3, 2);
-            btnEliminar.Name = "btnEliminar";
-            btnEliminar.Size = new Size(153, 46);
-            btnEliminar.TabIndex = 4;
-            btnEliminar.Text = "Eliminar";
-            btnEliminar.UseVisualStyleBackColor = true;
-            btnEliminar.Click += btnEliminar_Click;
-            // 
-            // btnCopiar
-            // 
-            btnCopiar.Location = new Point(573, 388);
-            btnCopiar.Margin = new Padding(3, 2, 3, 2);
-            btnCopiar.Name = "btnCopiar";
-            btnCopiar.Size = new Size(148, 46);
-            btnCopiar.TabIndex = 5;
-            btnCopiar.Text = "Copiar";
-            btnCopiar.UseVisualStyleBackColor = true;
-            btnCopiar.Click += btnCopiar_Click;
-            // 
-            // btnVerPropiedades
-            // 
-            btnVerPropiedades.Location = new Point(954, 388);
-            btnVerPropiedades.Margin = new Padding(3, 2, 3, 2);
-            btnVerPropiedades.Name = "btnVerPropiedades";
-            btnVerPropiedades.Size = new Size(184, 46);
-            btnVerPropiedades.TabIndex = 6;
-            btnVerPropiedades.Text = "Ver propiedades";
-            btnVerPropiedades.UseVisualStyleBackColor = true;
-            btnVerPropiedades.Click += btnVerPropiedades_Click;
-            // 
-            // dgvDatos
-            // 
-            dgvDatos.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dgvDatos.Location = new Point(10, 26);
-            dgvDatos.Margin = new Padding(3, 2, 3, 2);
-            dgvDatos.Name = "dgvDatos";
-            dgvDatos.RowHeadersWidth = 51;
-            dgvDatos.Size = new Size(760, 285);
-            dgvDatos.TabIndex = 8;
-            // 
-            // dgvPropiedades
-            // 
-            dgvPropiedades.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dgvPropiedades.Location = new Point(814, 26);
-            dgvPropiedades.Margin = new Padding(3, 2, 3, 2);
-            dgvPropiedades.Name = "dgvPropiedades";
-            dgvPropiedades.RowHeadersWidth = 51;
-            dgvPropiedades.Size = new Size(541, 285);
-            dgvPropiedades.TabIndex = 9;
-            // 
-            // btnAbrir
-            // 
-            btnAbrir.Location = new Point(36, 458);
-            btnAbrir.Margin = new Padding(3, 2, 3, 2);
-            btnAbrir.Name = "btnAbrir";
-            btnAbrir.Size = new Size(158, 46);
-            btnAbrir.TabIndex = 10;
-            btnAbrir.Text = "Abrir Archivo";
-            btnAbrir.UseVisualStyleBackColor = true;
-            btnAbrir.Click += btnAbrir_Click;
+            btnBuscar.Location = new Point(138, 58);
+            btnBuscar.Name = "btnBuscar";
+            btnBuscar.Size = new Size(120, 40);
+            btnBuscar.TabIndex = 9;
+            btnBuscar.Text = "Buscar";
+            btnBuscar.UseVisualStyleBackColor = true;
+            btnBuscar.Click += btnBuscar_Click;
             // 
             // btnModificar
             // 
-            btnModificar.Location = new Point(754, 388);
-            btnModificar.Margin = new Padding(3, 2, 3, 2);
+            btnModificar.Location = new Point(390, 58);
             btnModificar.Name = "btnModificar";
-            btnModificar.Size = new Size(175, 46);
-            btnModificar.TabIndex = 11;
-            btnModificar.Text = "Modificar Archivo";
+            btnModificar.Size = new Size(120, 40);
+            btnModificar.TabIndex = 10;
+            btnModificar.Text = "Modificar";
             btnModificar.UseVisualStyleBackColor = true;
             btnModificar.Click += btnModificar_Click;
             // 
+            // btnCrearArchivo
+            // 
+            btnCrearArchivo.Location = new Point(12, 12);
+            btnCrearArchivo.Name = "btnCrearArchivo";
+            btnCrearArchivo.Size = new Size(120, 40);
+            btnCrearArchivo.TabIndex = 1;
+            btnCrearArchivo.Text = "Crear Archivo";
+            btnCrearArchivo.UseVisualStyleBackColor = true;
+            btnCrearArchivo.Click += btnCrearArchivo_Click;
+            // 
+            // dgvRegistros
+            // 
+            dgvRegistros.AllowUserToAddRows = false;
+            dgvRegistros.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            dgvRegistros.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            dgvRegistros.Location = new Point(12, 150);
+            dgvRegistros.Name = "dgvRegistros";
+            dgvRegistros.ReadOnly = true;
+            dgvRegistros.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            dgvRegistros.Size = new Size(786, 288);
+            dgvRegistros.TabIndex = 11;
+            dgvRegistros.SelectionChanged += dgvRegistros_SelectionChanged;
+            // 
+            // txtNombre
+            // 
+            txtNombre.Location = new Point(203, 111);
+            txtNombre.Name = "txtNombre";
+            txtNombre.Size = new Size(200, 23);
+            txtNombre.TabIndex = 4;
+            // 
+            // txtCarrera
+            // 
+            txtCarrera.Location = new Point(465, 111);
+            txtCarrera.Name = "txtCarrera";
+            txtCarrera.Size = new Size(200, 23);
+            txtCarrera.TabIndex = 6;
+            // 
+            // lblNombre
+            // 
+            lblNombre.AutoSize = true;
+            lblNombre.Location = new Point(151, 114);
+            lblNombre.Name = "lblNombre";
+            lblNombre.Size = new Size(54, 15);
+            lblNombre.TabIndex = 14;
+            lblNombre.Text = "Nombre:";
+            // 
+            // lblCarrera
+            // 
+            lblCarrera.AutoSize = true;
+            lblCarrera.Location = new Point(409, 114);
+            lblCarrera.Name = "lblCarrera";
+            lblCarrera.Size = new Size(48, 15);
+            lblCarrera.TabIndex = 15;
+            lblCarrera.Text = "Carrera:";
+            // 
+            // lblArchivoActual
+            // 
+            lblArchivoActual.AutoSize = true;
+            lblArchivoActual.ForeColor = SystemColors.HotTrack;
+            lblArchivoActual.Location = new Point(642, 25);
+            lblArchivoActual.Name = "lblArchivoActual";
+            lblArchivoActual.Size = new Size(129, 15);
+            lblArchivoActual.TabIndex = 16;
+            lblArchivoActual.Text = "Ningún archivo abierto";
+            // 
+            // txtBuscar
+            // 
+            txtBuscar.Location = new Point(57, 111);
+            txtBuscar.Name = "txtBuscar";
+            txtBuscar.Size = new Size(86, 23);
+            txtBuscar.TabIndex = 18;
+            // 
+            // lblBuscar
+            // 
+            lblBuscar.AutoSize = true;
+            lblBuscar.Location = new Point(12, 114);
+            lblBuscar.Name = "lblBuscar";
+            lblBuscar.Size = new Size(45, 15);
+            lblBuscar.TabIndex = 17;
+            lblBuscar.Text = "Buscar:";
+            // 
+            // btnPropiedades
+            // 
+            btnPropiedades.Location = new Point(264, 58);
+            btnPropiedades.Name = "btnPropiedades";
+            btnPropiedades.Size = new Size(120, 40);
+            btnPropiedades.TabIndex = 19;
+            btnPropiedades.Text = "Propiedades";
+            btnPropiedades.UseVisualStyleBackColor = true;
+            btnPropiedades.Click += btnPropiedades_Click;
+            // 
             // btnCrearCarpeta
             // 
-            btnCrearCarpeta.Location = new Point(206, 458);
-            btnCrearCarpeta.Margin = new Padding(3, 2, 3, 2);
+            btnCrearCarpeta.Location = new Point(264, 12);
             btnCrearCarpeta.Name = "btnCrearCarpeta";
-            btnCrearCarpeta.Size = new Size(153, 46);
-            btnCrearCarpeta.TabIndex = 12;
+            btnCrearCarpeta.Size = new Size(120, 40);
+            btnCrearCarpeta.TabIndex = 20;
             btnCrearCarpeta.Text = "Crear Carpeta";
             btnCrearCarpeta.UseVisualStyleBackColor = true;
             btnCrearCarpeta.Click += btnCrearCarpeta_Click;
             // 
             // btnRenombrar
             // 
-            btnRenombrar.Location = new Point(388, 458);
-            btnRenombrar.Margin = new Padding(3, 2, 3, 2);
+            btnRenombrar.Location = new Point(516, 12);
             btnRenombrar.Name = "btnRenombrar";
-            btnRenombrar.Size = new Size(156, 46);
-            btnRenombrar.TabIndex = 13;
+            btnRenombrar.Size = new Size(120, 40);
+            btnRenombrar.TabIndex = 21;
             btnRenombrar.Text = "Renombrar";
             btnRenombrar.UseVisualStyleBackColor = true;
             btnRenombrar.Click += btnRenombrar_Click;
             // 
-            // btnAgregarInfo
+            // btnGuardarCambios
             // 
-            btnAgregarInfo.Location = new Point(573, 458);
-            btnAgregarInfo.Margin = new Padding(3, 2, 3, 2);
-            btnAgregarInfo.Name = "btnAgregarInfo";
-            btnAgregarInfo.Size = new Size(148, 46);
-            btnAgregarInfo.TabIndex = 14;
-            btnAgregarInfo.Text = "Agregar Info";
-            btnAgregarInfo.UseVisualStyleBackColor = true;
-            btnAgregarInfo.Click += btnAgregarInfo_Click;
+            btnGuardarCambios.Location = new Point(516, 58);
+            btnGuardarCambios.Name = "btnGuardarCambios";
+            btnGuardarCambios.Size = new Size(120, 40);
+            btnGuardarCambios.TabIndex = 22;
+            btnGuardarCambios.Text = "Guardar Cambios";
+            btnGuardarCambios.UseVisualStyleBackColor = true;
+            btnGuardarCambios.Click += btnGuardarCambios_Click;
             // 
-            // btnEliminarInfo
+            // btnCopiarArchivo
             // 
-            btnEliminarInfo.Location = new Point(754, 458);
-            btnEliminarInfo.Margin = new Padding(3, 2, 3, 2);
-            btnEliminarInfo.Name = "btnEliminarInfo";
-            btnEliminarInfo.Size = new Size(175, 46);
-            btnEliminarInfo.TabIndex = 15;
-            btnEliminarInfo.Text = "Eliminar Info";
-            btnEliminarInfo.UseVisualStyleBackColor = true;
-            btnEliminarInfo.Click += btnEliminarInfo_Click;
+            btnCopiarArchivo.Location = new Point(642, 58);
+            btnCopiarArchivo.Name = "btnCopiarArchivo";
+            btnCopiarArchivo.Size = new Size(120, 40);
+            btnCopiarArchivo.TabIndex = 23;
+            btnCopiarArchivo.Text = "Copiar Archivo";
+            btnCopiarArchivo.UseVisualStyleBackColor = true;
+            btnCopiarArchivo.Click += btnCopiarArchivo_Click;
             // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            BackColor = SystemColors.ActiveCaption;
-            ClientSize = new Size(1370, 543);
-            Controls.Add(btnEliminarInfo);
-            Controls.Add(btnAgregarInfo);
+            ClientSize = new Size(810, 450);
+            Controls.Add(btnCopiarArchivo);
+            Controls.Add(btnGuardarCambios);
             Controls.Add(btnRenombrar);
             Controls.Add(btnCrearCarpeta);
+            Controls.Add(btnPropiedades);
+            Controls.Add(txtBuscar);
+            Controls.Add(lblBuscar);
+            Controls.Add(lblArchivoActual);
+            Controls.Add(lblCarrera);
+            Controls.Add(lblNombre);
+            Controls.Add(txtCarrera);
+            Controls.Add(txtNombre);
+            Controls.Add(dgvRegistros);
+            Controls.Add(btnCrearArchivo);
             Controls.Add(btnModificar);
-            Controls.Add(btnAbrir);
-            Controls.Add(dgvPropiedades);
-            Controls.Add(dgvDatos);
-            Controls.Add(btnVerPropiedades);
-            Controls.Add(btnCopiar);
-            Controls.Add(btnEliminar);
-            Controls.Add(BtnMoverArchivo);
-            Controls.Add(BtnCrearArchivo);
-            Controls.Add(labelDatos);
-            Margin = new Padding(3, 2, 3, 2);
+            Controls.Add(btnBuscar);
+            Controls.Add(btnEliminarRegistro);
+            Controls.Add(btnAgregarRegistro);
+            Controls.Add(btnAbrirArchivo);
             Name = "Form1";
-            Text = "Archivos Secuenciales";
+            Text = "Gestor de Archivos Secuenciales";
             Load += Form1_Load;
-            ((System.ComponentModel.ISupportInitialize)dgvDatos).EndInit();
-            ((System.ComponentModel.ISupportInitialize)dgvPropiedades).EndInit();
+            ((System.ComponentModel.ISupportInitialize)dgvRegistros).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
 
         #endregion
 
-        private Button BtnCrearArchivo;
-        private Button BtnMoverArchivo;
-        private Label labelDatos;
-        private Button btnEliminar;
-        private Button btnCopiar;
-        private Button btnVerPropiedades;
-        private DataGridView dgvDatos;
-        private DataGridView dgvPropiedades;
-        private Button btnAbrir;
+        private Button btnAbrirArchivo;
+        private Button btnAgregarRegistro;
+        private Button btnEliminarRegistro;
+        private Button btnBuscar;
         private Button btnModificar;
+        private Button btnCrearArchivo;
+        private DataGridView dgvRegistros;
+        private TextBox txtNombre;
+        private TextBox txtCarrera;
+        private Label lblNombre;
+        private Label lblCarrera;
+        private Label lblArchivoActual;
+        private TextBox txtBuscar;
+        private Label lblBuscar;
+        private Button btnPropiedades;
         private Button btnCrearCarpeta;
         private Button btnRenombrar;
-        private Button btnAgregarInfo;
-        private Button btnEliminarInfo;
+        private Button btnGuardarCambios;
+        private Button btnCopiarArchivo;
     }
 }

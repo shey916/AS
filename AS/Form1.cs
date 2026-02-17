@@ -1,11 +1,11 @@
-using System.IO;
+using Microsoft.Win32;
 
 namespace AS
 {
     public partial class Form1 : Form
     {
-        private string archivoActual = "";
-        private const string FILTRO_ARCHIVOS = "Archivos de texto (*.txt)|*.txt|Archivos CSV (*.csv)|*.csv|Archivos JSON (*.json)|*.json|Archivos de datos (*.dat)|*.dat|Todos los archivos (*.*)|*.*";
+        private string rutaArchivoActual = string.Empty;
+        private List<Registro> registros = new List<Registro>();
 
         public Form1()
         {
@@ -14,1057 +14,566 @@ namespace AS
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            ConfigurarDataGridViews();
+            ConfigurarDataGridView();
         }
-        private void ConfigurarDataGridViews()
+
+        private void ConfigurarDataGridView()
         {
-            // Configurar dgvDatos
-            dgvDatos.AllowUserToAddRows = true;
-            dgvDatos.AllowUserToDeleteRows = true;
-            dgvDatos.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            dgvRegistros.Columns.Clear();
+            dgvRegistros.Columns.Add("Nombre", "Nombre");
+            dgvRegistros.Columns.Add("Carrera", "Carrera");
+        }
 
-            if (dgvDatos.Columns.Count == 0)
+        private void ActualizarDataGridView()
+        {
+            dgvRegistros.Rows.Clear();
+            foreach (var registro in registros)
             {
-                dgvDatos.Columns.Add("Datos", "Datos");
-            }
-
-            // Configurar dgvPropiedades
-            dgvPropiedades.AllowUserToAddRows = false;
-            dgvPropiedades.AllowUserToDeleteRows = false;
-            dgvPropiedades.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-
-            if (dgvPropiedades.Columns.Count == 0)
-            {
-                dgvPropiedades.Columns.Add("Propiedad", "Propiedad");
-                dgvPropiedades.Columns.Add("Valor", "Valor");
+                dgvRegistros.Rows.Add(registro.Nombre, registro.Carrera);
             }
         }
 
-        private void CrearArchivo()
+        private void btnCrearArchivo_Click(object sender, EventArgs e)
         {
-            try
+            using SaveFileDialog saveFileDialog = new SaveFileDialog();
+            saveFileDialog.Filter = "Archivos de datos (*.txt)|*.txt|Todos los archivos (*.*)|*.*";
+            saveFileDialog.Title = "Crear Nuevo Archivo Secuencial";
+            saveFileDialog.FileName = "datos.txt";
+
+            if (saveFileDialog.ShowDialog() == DialogResult.OK)
             {
-                if (dgvDatos.Rows.Count == 0 || string.IsNullOrWhiteSpace(dgvDatos.Rows[0].Cells[0].Value?.ToString()))
+                try
                 {
-                    MessageBox.Show("Por favor, escriba algo antes de crear el archivo.", "Advertencia", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
+                    rutaArchivoActual = saveFileDialog.FileName;
+
+                    File.WriteAllText(rutaArchivoActual, string.Empty);
+
+                    registros.Clear();
+                    ActualizarDataGridView();
+
+                    lblArchivoActual.Text = $"Archivo: {Path.GetFileName(rutaArchivoActual)}";
+                    MessageBox.Show("Archivo secuencial creado exitosamente", "Éxito", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
-
-                SaveFileDialog saveFileDialog1 = new SaveFileDialog();
-                saveFileDialog1.Filter = FILTRO_ARCHIVOS;
-                saveFileDialog1.Title = "Guardar archivo";
-                saveFileDialog1.DefaultExt = "txt";
-                saveFileDialog1.AddExtension = true;
-
-                if (saveFileDialog1.ShowDialog() == DialogResult.OK)
+                catch (Exception ex)
                 {
-                    string rutaArchivo = saveFileDialog1.FileName;
-                    string extension = Path.GetExtension(rutaArchivo).ToLower();
+                    MessageBox.Show($"Error al crear archivo: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
 
-                    if (File.Exists(rutaArchivo))
+        private void btnAbrirArchivo_Click(object sender, EventArgs e)
+        {
+            using OpenFileDialog openFileDialog = new OpenFileDialog();
+            openFileDialog.Filter = "Archivos de datos (*.txt)|*.txt|Todos los archivos (*.*)|*.*";
+            openFileDialog.Title = "Abrir Archivo Secuencial";
+
+            if (openFileDialog.ShowDialog() == DialogResult.OK)
+            {
+                try
+                {
+                    rutaArchivoActual = openFileDialog.FileName;
+
+                    CargarArchivo();
+                    ActualizarDataGridView();
+
+                    lblArchivoActual.Text = $"Archivo: {Path.GetFileName(rutaArchivoActual)}";
+                    MessageBox.Show($"Archivo secuencial cargado: {registros.Count} registros", "Información", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error al abrir archivo: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+
+        private void CargarArchivo()
+        {
+            registros.Clear();
+
+            if (!File.Exists(rutaArchivoActual))
+                return;
+
+            using (StreamReader sr = new StreamReader(rutaArchivoActual))
+            {
+                string linea;
+                while ((linea = sr.ReadLine()) != null)
+                {
+                    if (!string.IsNullOrWhiteSpace(linea))
                     {
-                        DialogResult resultado = MessageBox.Show("El archivo ya existe. ¿Desea reemplazarlo?", "Confirmación", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-                        if (resultado == DialogResult.No)
+                        Registro registro = Registro.FromFileString(linea);
+                        if (registro != null)
                         {
-                            return;
+                            registros.Add(registro);
                         }
                     }
-
-                    // Determinar el formato según la extensión
-                    switch (extension)
-                    {
-                        case ".json":
-                            CrearArchivoJSON(rutaArchivo);
-                            break;
-                        case ".csv":
-                            CrearArchivoCSV(rutaArchivo);
-                            break;
-                        case ".txt":
-                        case ".dat":
-                        default:
-                            CrearArchivoTexto(rutaArchivo);
-                            break;
-                    }
-
-                    MessageBox.Show($"Archivo {extension.ToUpper()} creado exitosamente.", "Éxito", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    archivoActual = rutaArchivo;
-                    dgvDatos.Rows.Clear();
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error al crear el archivo: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
-        /// <summary>
-        /// Crea un archivo de texto plano (.txt, .dat)
-        /// Utiliza StreamWriter para escritura secuencial
-        /// </summary>
-        private void CrearArchivoTexto(string rutaArchivo)
-        {
-            using (StreamWriter writer = new StreamWriter(rutaArchivo))
-            {
-                foreach (DataGridViewRow row in dgvDatos.Rows)
-                {
-                    if (!row.IsNewRow && row.Cells[0].Value != null)
-                    {
-                        writer.WriteLine(row.Cells[0].Value.ToString());
-                    }
                 }
             }
         }
 
-        /// <summary>
-        /// Crea un archivo CSV con formato adecuado
-        /// Escapa caracteres especiales y maneja comas
-        /// </summary>
-        private void CrearArchivoCSV(string rutaArchivo)
+        private void btnAgregarRegistro_Click(object sender, EventArgs e)
         {
-            using (StreamWriter writer = new StreamWriter(rutaArchivo))
+            if (string.IsNullOrEmpty(rutaArchivoActual))
             {
-                foreach (DataGridViewRow row in dgvDatos.Rows)
-                {
-                    if (!row.IsNewRow && row.Cells[0].Value != null)
-                    {
-                        string valor = row.Cells[0].Value.ToString();
-
-                        // Si el valor contiene comas, comillas o saltos de línea, lo encerramos entre comillas
-                        if (valor.Contains(',') || valor.Contains('"') || valor.Contains('\n'))
-                        {
-                            valor = $"\"{valor.Replace("\"", "\"\"")}\"";
-                        }
-
-                        writer.WriteLine(valor);
-                    }
-                }
-            }
-        }
-        /// <summary>
-        /// Crea un archivo JSON con formato array de strings
-        /// Utiliza System.Text.Json para serialización
-        /// </summary>
-        private void CrearArchivoJSON(string rutaArchivo)
-        {
-            List<string> datos = new List<string>();
-
-            foreach (DataGridViewRow row in dgvDatos.Rows)
-            {
-                if (!row.IsNewRow && row.Cells[0].Value != null)
-                {
-                    datos.Add(row.Cells[0].Value.ToString());
-                }
-            }
-
-            // Serializar a JSON con formato indentado
-            string jsonContent = System.Text.Json.JsonSerializer.Serialize(datos, new System.Text.Json.JsonSerializerOptions
-            {
-                WriteIndented = true,
-                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-            });
-
-            File.WriteAllText(rutaArchivo, jsonContent);
-        }
-
-        private void MoverArchivo()
-        {
-            try
-            {
-                OpenFileDialog openFileDialog1 = new OpenFileDialog();
-                openFileDialog1.Filter = FILTRO_ARCHIVOS;
-                openFileDialog1.Title = "Seleccionar archivo a mover";
-                if (openFileDialog1.ShowDialog() == DialogResult.OK)
-                {
-                    string rutaOrigen = openFileDialog1.FileName;
-
-                    FolderBrowserDialog folderBrowserDialog1 = new FolderBrowserDialog();
-                    folderBrowserDialog1.Description = "Seleccione la carpeta de destino";
-                    if (folderBrowserDialog1.ShowDialog() == DialogResult.OK)
-                    {
-                        string carpetaDestino = folderBrowserDialog1.SelectedPath;
-                        string nombreArchivo = Path.GetFileName(rutaOrigen);
-                        string rutaDestino = Path.Combine(carpetaDestino, nombreArchivo);
-
-                        if (File.Exists(rutaDestino))
-                        {
-                            DialogResult resultado = MessageBox.Show("El archivo ya existe en la carpeta de destino. ¿Desea reemplazarlo?", "Confirmación", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-                            if (resultado == DialogResult.No)
-                            {
-                                return;
-                            }
-                            File.Delete(rutaDestino);
-                        }
-
-                        File.Move(rutaOrigen, rutaDestino);
-                        MessageBox.Show("Archivo movido exitosamente.", "Éxito", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error al mover el archivo: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
-        private void BtnCrearArchivo_click(object sender, EventArgs e)
-        {
-            CrearArchivo();
-        }
-
-        private void BtnMoverArchivo_Click(object sender, EventArgs e)
-        {
-            MoverArchivo();
-        }
-
-        private void btnEliminar_Click(object sender, EventArgs e)
-        {
-            bool flowControl = Eliminar();
-            if (!flowControl)
-            {
+                MessageBox.Show("Primero crea o abre un archivo", "Advertencia", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-        }
 
-        private static bool Eliminar()
-        {
-            OpenFileDialog ofd = new OpenFileDialog();
-            ofd.Filter = "Archivos de texto (*.txt)|*.txt|Archivos CSV (*.csv)|*.csv|Archivos JSON (*.json)|*.json|Archivos de datos (*.dat)|*.dat|Todos los archivos (*.*)|*.*";
-            if (ofd.ShowDialog() == DialogResult.OK)
+            if (string.IsNullOrWhiteSpace(txtNombre.Text) || string.IsNullOrWhiteSpace(txtCarrera.Text))
             {
-                string filepath = ofd.FileName;
-                DialogResult resultado = MessageBox.Show("¿Desea eliminarlo?", "Confirmación", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-                if (resultado == DialogResult.No)
-                {
-                    return false;
-                }
-
-                File.Delete(filepath);
-                MessageBox.Show("Archivo eliminado exitosamente.", "Éxito", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("Por favor completa todos los campos", "Advertencia", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
             }
 
-            return true;
-        }
-
-        private void CopiarArchivo()
-        {
             try
             {
-                OpenFileDialog openFileDialog1 = new OpenFileDialog();
-                openFileDialog1.Filter = FILTRO_ARCHIVOS;
-                openFileDialog1.Title = "Seleccionar archivo a copiar";
-                if (openFileDialog1.ShowDialog() == DialogResult.OK)
-                {
-                    string rutaOrigen = openFileDialog1.FileName;
+                Registro nuevoRegistro = new Registro(txtNombre.Text.Trim(), txtCarrera.Text.Trim());
 
-                    FolderBrowserDialog folderBrowserDialog1 = new FolderBrowserDialog();
-                    folderBrowserDialog1.Description = "Seleccione la carpeta de destino";
-                    if (folderBrowserDialog1.ShowDialog() == DialogResult.OK)
-                    {
-                        string carpetaDestino = folderBrowserDialog1.SelectedPath;
-                        string nombreArchivo = Path.GetFileName(rutaOrigen);
-                        string rutaDestino = Path.Combine(carpetaDestino, nombreArchivo);
+                registros.Add(nuevoRegistro);
+                ActualizarDataGridView();
 
-                        if (File.Exists(rutaDestino))
-                        {
-                            DialogResult resultado = MessageBox.Show("El archivo ya existe en la carpeta de destino. ¿Desea reemplazarlo?", "Confirmación", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-                            if (resultado == DialogResult.No)
-                            {
-                                return;
-                            }
-                            File.Delete(rutaDestino);
-                        }
-
-                        File.Copy(rutaOrigen, rutaDestino);
-                        MessageBox.Show("Archivo copiado exitosamente.", "Éxito", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    }
-                }
+                LimpiarCampos();
+                MessageBox.Show("Registro agregado exitosamente", "Éxito", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error al copiar el archivo: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Error al agregar registro: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-        }
-
-        private void btnCopiar_Click(object sender, EventArgs e)
-        {
-            CopiarArchivo();
-        }
-
-        private void btnVerPropiedades_Click(object sender, EventArgs e)
-        {
-            OpenFileDialog openFileDialog1 = new OpenFileDialog();
-            openFileDialog1.Filter = FILTRO_ARCHIVOS;
-            openFileDialog1.Title = "Seleccionar archivo ";
-            if (openFileDialog1.ShowDialog() == DialogResult.OK)
-            {
-                string rutaOrigen = openFileDialog1.FileName;
-
-                FileInfo info = new FileInfo(rutaOrigen);
-
-                dgvPropiedades.Rows.Clear();
-                dgvPropiedades.Rows.Add("Tamaño", info.Length + " bytes");
-                dgvPropiedades.Rows.Add("Nombre", info.Name);
-                dgvPropiedades.Rows.Add("Fecha de creación", info.CreationTime.ToString());
-                dgvPropiedades.Rows.Add("Extensión", info.Extension);
-                dgvPropiedades.Rows.Add("Último acceso", info.LastAccessTime.ToString());
-                dgvPropiedades.Rows.Add("Última modificación", info.LastWriteTime.ToString());
-                dgvPropiedades.Rows.Add("Atributos", info.Attributes.ToString());
-                dgvPropiedades.Rows.Add("Ubicación", info.FullName);
-                dgvPropiedades.Rows.Add("Carpeta contenedora", info.DirectoryName);
-            }
-        }
-
-        // ==================== NUEVAS funciones     MODIFICAR CONTENIDO DE UN ARCHIVO EDIRAR/GUARDAR CAMBIOS, VER LO QUE TIENE ====================
-
-        /// <summary>
-        /// Abre un archivo y muestra su contenido línea por línea en el DataGridView
-        /// Soporta TXT, CSV, JSON y DAT
-        /// </summary>
-        private void AbrirArchivo()
-        {
-            try
-            {
-                OpenFileDialog openFileDialog1 = new OpenFileDialog();
-                openFileDialog1.Filter = FILTRO_ARCHIVOS;
-                openFileDialog1.Title = "Abrir archivo";
-
-                if (openFileDialog1.ShowDialog() == DialogResult.OK)
-                {
-                    string rutaArchivo = openFileDialog1.FileName;
-                    string extension = Path.GetExtension(rutaArchivo).ToLower();
-                    archivoActual = rutaArchivo;
-
-                    // limpiar el DataGridView antes de cargar
-                    dgvDatos.Rows.Clear();
-
-                    // Leer según el tipo de archivo
-                    switch (extension)
-                    {
-                        case ".json":
-                            LeerArchivoJSON(rutaArchivo);
-                            break;
-                        case ".csv":
-                            LeerArchivoCSV(rutaArchivo);
-                            break;
-                        case ".txt":
-                        case ".dat":
-                        default:
-                            LeerArchivoTexto(rutaArchivo);
-                            break;
-                    }
-
-                    MessageBox.Show($"Archivo {extension.ToUpper()} abierto exitosamente.\nLíneas leídas: {dgvDatos.Rows.Count - 1}",
-                                    "Éxito",
-                                    MessageBoxButtons.OK,
-                                    MessageBoxIcon.Information);
-
-                    this.Text = $"Archivos Secuenciales - {Path.GetFileName(rutaArchivo)}";
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error al abrir el archivo: {ex.Message}",
-                               "Error",
-                               MessageBoxButtons.OK,
-                               MessageBoxIcon.Error);
-            }
-        }
-
-        /// <summary>
-        /// Lee un archivo de texto plano línea por línea
-        /// </summary>
-        private void LeerArchivoTexto(string rutaArchivo)
-        {
-            using (StreamReader reader = new StreamReader(rutaArchivo))
-            {
-                string linea;
-                while ((linea = reader.ReadLine()) != null)
-                {
-                    dgvDatos.Rows.Add(linea);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Lee un archivo CSV manejando valores entre comillas
-        /// </summary>
-        private void LeerArchivoCSV(string rutaArchivo)
-        {
-            using (StreamReader reader = new StreamReader(rutaArchivo))
-            {
-                string linea;
-                while ((linea = reader.ReadLine()) != null)
-                {
-                    // Remover comillas si el valor está encerrado
-                    if (linea.StartsWith("\"") && linea.EndsWith("\""))
-                    {
-                        linea = linea.Substring(1, linea.Length - 2).Replace("\"\"", "\"");
-                    }
-                    dgvDatos.Rows.Add(linea);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Lee un archivo JSON y deserializa el contenido
-        /// </summary>
-        private void LeerArchivoJSON(string rutaArchivo)
-        {
-            string contenido = File.ReadAllText(rutaArchivo);
-
-            try
-            {
-                // Intentar deserializar como array de strings
-                var datos = System.Text.Json.JsonSerializer.Deserialize<List<string>>(contenido);
-
-                if (datos != null)
-                {
-                    foreach (string item in datos)
-                    {
-                        dgvDatos.Rows.Add(item);
-                    }
-                }
-            }
-            catch
-            {
-                // Si falla, mostrar el contenido JSON como texto
-                dgvDatos.Rows.Add(contenido);
-            }
-        }
-
-        /// <summary>
-        /// Modifica el contenido de un archivo existente
-        /// Soporta TXT, CSV, JSON y DAT
-        /// </summary>
-        private void ModificarArchivo()
-        {
-            try
-            {
-                // si no hay archivo abierto, preguntar cuál modificar
-                if (string.IsNullOrEmpty(archivoActual))
-                {
-                    OpenFileDialog openFileDialog1 = new OpenFileDialog();
-                    openFileDialog1.Filter = FILTRO_ARCHIVOS;
-                    openFileDialog1.Title = "Seleccionar archivo a modificar";
-
-                    if (openFileDialog1.ShowDialog() == DialogResult.OK)
-                    {
-                        archivoActual = openFileDialog1.FileName;
-                        string extension = Path.GetExtension(archivoActual).ToLower();
-
-                        // cargar el contenido actual
-                        dgvDatos.Rows.Clear();
-
-                        switch (extension)
-                        {
-                            case ".json":
-                                LeerArchivoJSON(archivoActual);
-                                break;
-                            case ".csv":
-                                LeerArchivoCSV(archivoActual);
-                                break;
-                            default:
-                                LeerArchivoTexto(archivoActual);
-                                break;
-                        }
-                    }
-                    else
-                    {
-                        return;
-                    }
-                }
-
-                // verificar que hay datos para guardar
-                if (dgvDatos.Rows.Count == 0 ||
-                    (dgvDatos.Rows.Count == 1 && dgvDatos.Rows[0].IsNewRow))
-                {
-                    MessageBox.Show("No hay datos para guardar.",
-                                   "Advertencia",
-                                   MessageBoxButtons.OK,
-                                   MessageBoxIcon.Warning);
-                    return;
-                }
-
-                // Confirmar modificación
-                DialogResult resultado = MessageBox.Show(
-                    $"¿Desea guardar los cambios en el archivo?\n{Path.GetFileName(archivoActual)}",
-                    "Confirmar modificación",
-                    MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Question);
-
-                if (resultado == DialogResult.Yes)
-                {
-                    string extension = Path.GetExtension(archivoActual).ToLower();
-
-                    // crear un archivo temporal para escritura segura
-                    string archivoTemporal = archivoActual + ".tmp";
-
-                    // Escribir según el tipo de archivo
-                    switch (extension)
-                    {
-                        case ".json":
-                            CrearArchivoJSON(archivoTemporal);
-                            break;
-                        case ".csv":
-                            CrearArchivoCSV(archivoTemporal);
-                            break;
-                        default:
-                            CrearArchivoTexto(archivoTemporal);
-                            break;
-                    }
-
-                    // REMPLAZAR el archivo original con el temporal
-                    if (File.Exists(archivoActual))
-                    {
-                        File.Delete(archivoActual);
-                    }
-                    File.Move(archivoTemporal, archivoActual);
-
-                    MessageBox.Show("Archivo modificado exitosamente.",
-                                   "Éxito",
-                                   MessageBoxButtons.OK,
-                                   MessageBoxIcon.Information);
-
-                    // actualizar el título del formulario
-                    this.Text = $"Archivos Secuenciales - {Path.GetFileName(archivoActual)} [Modificado]";
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error al modificar el archivo: {ex.Message}",
-                               "Error",
-                               MessageBoxButtons.OK,
-                               MessageBoxIcon.Error);
-            }
-        }
-
-        private void btnAbrir_Click(object sender, EventArgs e)
-        {
-            AbrirArchivo();
         }
 
         private void btnModificar_Click(object sender, EventArgs e)
         {
-            ModificarArchivo();
-        }
+            if (dgvRegistros.SelectedRows.Count == 0)
+            {
+                MessageBox.Show("Selecciona un registro para modificar", "Advertencia", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
 
-        // ==================== NUEVAS FUNCIONALIDADES ====================
+            if (string.IsNullOrWhiteSpace(txtNombre.Text) || string.IsNullOrWhiteSpace(txtCarrera.Text))
+            {
+                MessageBox.Show("Por favor completa todos los campos", "Advertencia", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
 
-        /// <summary>
-        /// Crea una nueva carpeta en la ubicación seleccionada
-        /// </summary>
-        private void CrearCarpeta()
-        {
             try
             {
-                FolderBrowserDialog folderBrowserDialog1 = new FolderBrowserDialog();
-                folderBrowserDialog1.Description = "Seleccione la ubicación donde crear la carpeta";
-
-                if (folderBrowserDialog1.ShowDialog() == DialogResult.OK)
+                int indiceSeleccionado = dgvRegistros.SelectedRows[0].Index;
+                
+                if (indiceSeleccionado >= 0 && indiceSeleccionado < registros.Count)
                 {
-                    string ubicacionPadre = folderBrowserDialog1.SelectedPath;
+                    registros[indiceSeleccionado].Nombre = txtNombre.Text.Trim();
+                    registros[indiceSeleccionado].Carrera = txtCarrera.Text.Trim();
 
-                    // Solicitar el nombre de la nueva carpeta
-                    string nombreCarpeta = Microsoft.VisualBasic.Interaction.InputBox(
-                        "Ingrese el nombre de la nueva carpeta:",
-                        "Crear Carpeta",
-                        "Nueva Carpeta");
-
-                    if (string.IsNullOrWhiteSpace(nombreCarpeta))
-                    {
-                        MessageBox.Show("Debe ingresar un nombre válido para la carpeta.",
-                                       "Advertencia",
-                                       MessageBoxButtons.OK,
-                                       MessageBoxIcon.Warning);
-                        return;
-                    }
-
-                    string rutaCarpeta = Path.Combine(ubicacionPadre, nombreCarpeta);
-
-                    if (Directory.Exists(rutaCarpeta))
-                    {
-                        MessageBox.Show("La carpeta ya existe en esta ubicación.",
-                                       "Advertencia",
-                                       MessageBoxButtons.OK,
-                                       MessageBoxIcon.Warning);
-                        return;
-                    }
-
-                    Directory.CreateDirectory(rutaCarpeta);
-                    MessageBox.Show($"Carpeta creada exitosamente:\n{rutaCarpeta}",
-                                   "Éxito",
-                                   MessageBoxButtons.OK,
-                                   MessageBoxIcon.Information);
+                    ActualizarDataGridView();
+                    LimpiarCampos();
+                    MessageBox.Show("Registro modificado exitosamente", "Éxito", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error al crear la carpeta: {ex.Message}",
-                               "Error",
-                               MessageBoxButtons.OK,
-                               MessageBoxIcon.Error);
+                MessageBox.Show($"Error al modificar: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
-        /// <summary>
-        /// Renombra un archivo o carpeta seleccionado
-        /// </summary>
-        private void RenombrarArchivoOCarpeta()
+        private void btnEliminarRegistro_Click(object sender, EventArgs e)
         {
-            try
+            if (dgvRegistros.SelectedRows.Count == 0)
             {
-                // Preguntar si es archivo o carpeta
-                DialogResult tipoSeleccion = MessageBox.Show(
-                    "¿Desea renombrar un archivo?\n\nSí = Archivo\nNo = Carpeta",
-                    "Seleccionar tipo",
-                    MessageBoxButtons.YesNoCancel,
-                    MessageBoxIcon.Question);
-
-                if (tipoSeleccion == DialogResult.Cancel)
-                {
-                    return;
-                }
-
-                string rutaOriginal = "";
-                string nombreOriginal = "";
-                bool esArchivo = tipoSeleccion == DialogResult.Yes;
-
-                if (esArchivo)
-                {
-                    OpenFileDialog openFileDialog1 = new OpenFileDialog();
-                    openFileDialog1.Filter = "Todos los archivos (*.*)|*.*|" + FILTRO_ARCHIVOS;
-                    openFileDialog1.Title = "Seleccionar archivo a renombrar";
-
-                    if (openFileDialog1.ShowDialog() == DialogResult.OK)
-                    {
-                        rutaOriginal = openFileDialog1.FileName;
-                        nombreOriginal = Path.GetFileName(rutaOriginal);
-                    }
-                    else
-                    {
-                        return;
-                    }
-                }
-                else
-                {
-                    FolderBrowserDialog folderBrowserDialog1 = new FolderBrowserDialog();
-                    folderBrowserDialog1.Description = "Seleccione la carpeta a renombrar";
-
-                    if (folderBrowserDialog1.ShowDialog() == DialogResult.OK)
-                    {
-                        rutaOriginal = folderBrowserDialog1.SelectedPath;
-                        nombreOriginal = Path.GetFileName(rutaOriginal);
-                    }
-                    else
-                    {
-                        return;
-                    }
-                }
-
-                // Solicitar el nuevo nombre
-                string nuevoNombre = Microsoft.VisualBasic.Interaction.InputBox(
-                    $"Ingrese el nuevo nombre para: {nombreOriginal}",
-                    "Renombrar",
-                    nombreOriginal);
-
-                if (string.IsNullOrWhiteSpace(nuevoNombre))
-                {
-                    MessageBox.Show("Debe ingresar un nombre válido.",
-                                   "Advertencia",
-                                   MessageBoxButtons.OK,
-                                   MessageBoxIcon.Warning);
-                    return;
-                }
-
-                string directorioPadre = Path.GetDirectoryName(rutaOriginal);
-                string rutaNueva = Path.Combine(directorioPadre, nuevoNombre);
-
-                // Verificar si ya existe
-                if ((esArchivo && File.Exists(rutaNueva)) || (!esArchivo && Directory.Exists(rutaNueva)))
-                {
-                    MessageBox.Show("Ya existe un elemento con ese nombre en la ubicación.",
-                                   "Advertencia",
-                                   MessageBoxButtons.OK,
-                                   MessageBoxIcon.Warning);
-                    return;
-                }
-
-                // Renombrar
-                if (esArchivo)
-                {
-                    File.Move(rutaOriginal, rutaNueva);
-
-                    // Actualizar archivoActual si era el archivo que estaba abierto
-                    if (archivoActual == rutaOriginal)
-                    {
-                        archivoActual = rutaNueva;
-                        this.Text = $"Archivos Secuenciales - {Path.GetFileName(rutaNueva)}";
-                    }
-                }
-                else
-                {
-                    Directory.Move(rutaOriginal, rutaNueva);
-                }
-
-                MessageBox.Show($"Renombrado exitosamente a:\n{nuevoNombre}",
-                               "Éxito",
-                               MessageBoxButtons.OK,
-                               MessageBoxIcon.Information);
+                MessageBox.Show("Selecciona un registro para eliminar", "Advertencia", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
             }
-            catch (Exception ex)
+
+            DialogResult resultado = MessageBox.Show("¿Estás seguro de eliminar este registro?", "Confirmar Eliminación", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+            if (resultado == DialogResult.Yes)
             {
-                MessageBox.Show($"Error al renombrar: {ex.Message}",
-                               "Error",
-                               MessageBoxButtons.OK,
-                               MessageBoxIcon.Error);
-            }
-        }
-
-        /// <summary>
-        /// Agrega información al final de un archivo existente (modo append)
-        /// Soporta TXT, CSV, JSON y DAT
-        /// </summary>
-        private void AgregarInformacionAlArchivo()
-        {
-            try
-            {
-                OpenFileDialog openFileDialog1 = new OpenFileDialog();
-                openFileDialog1.Filter = FILTRO_ARCHIVOS;
-                openFileDialog1.Title = "Seleccionar archivo para agregar información";
-
-                if (openFileDialog1.ShowDialog() == DialogResult.OK)
-                {
-                    string rutaArchivo = openFileDialog1.FileName;
-                    string extension = Path.GetExtension(rutaArchivo).ToLower();
-
-                    // Solicitar la información a agregar
-                    string informacion = Microsoft.VisualBasic.Interaction.InputBox(
-                        "Ingrese la información que desea agregar al archivo:",
-                        "Agregar Información",
-                        "");
-
-                    if (string.IsNullOrWhiteSpace(informacion))
-                    {
-                        MessageBox.Show("No se ingresó información para agregar.",
-                                       "Advertencia",
-                                       MessageBoxButtons.OK,
-                                       MessageBoxIcon.Warning);
-                        return;
-                    }
-
-                    // Agregar según el tipo de archivo
-                    switch (extension)
-                    {
-                        case ".json":
-                            AgregarAJSON(rutaArchivo, informacion);
-                            break;
-                        case ".csv":
-                            AgregarACSV(rutaArchivo, informacion);
-                            break;
-                        default:
-                            AgregarATexto(rutaArchivo, informacion);
-                            break;
-                    }
-
-                    MessageBox.Show("Información agregada exitosamente al archivo.",
-                                   "Éxito",
-                                   MessageBoxButtons.OK,
-                                   MessageBoxIcon.Information);
-
-                    // Si es el archivo actual, recargar el contenido
-                    if (archivoActual == rutaArchivo)
-                    {
-                        dgvDatos.Rows.Clear();
-                        switch (extension)
-                        {
-                            case ".json":
-                                LeerArchivoJSON(rutaArchivo);
-                                break;
-                            case ".csv":
-                                LeerArchivoCSV(rutaArchivo);
-                                break;
-                            default:
-                                LeerArchivoTexto(rutaArchivo);
-                                break;
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error al agregar información al archivo: {ex.Message}",
-                               "Error",
-                               MessageBoxButtons.OK,
-                               MessageBoxIcon.Error);
-            }
-        }
-
-        /// <summary>
-        /// Agrega una línea a un archivo de texto
-        /// </summary>
-        private void AgregarATexto(string rutaArchivo, string informacion)
-        {
-            using (StreamWriter writer = new StreamWriter(rutaArchivo, append: true))
-            {
-                writer.WriteLine(informacion);
-            }
-        }
-
-        /// <summary>
-        /// Agrega una línea a un archivo CSV con formato adecuado
-        /// </summary>
-        private void AgregarACSV(string rutaArchivo, string informacion)
-        {
-            using (StreamWriter writer = new StreamWriter(rutaArchivo, append: true))
-            {
-                if (informacion.Contains(',') || informacion.Contains('"') || informacion.Contains('\n'))
-                {
-                    informacion = $"\"{informacion.Replace("\"", "\"\"")}\"";
-                }
-                writer.WriteLine(informacion);
-            }
-        }
-
-        /// <summary>
-        /// Agrega un elemento al array JSON
-        /// </summary>
-        private void AgregarAJSON(string rutaArchivo, string informacion)
-        {
-            List<string> datos = new List<string>();
-
-            // Leer el JSON existente
-            if (File.Exists(rutaArchivo))
-            {
-                string contenido = File.ReadAllText(rutaArchivo);
                 try
                 {
-                    datos = System.Text.Json.JsonSerializer.Deserialize<List<string>>(contenido) ?? new List<string>();
+                    int indiceSeleccionado = dgvRegistros.SelectedRows[0].Index;
+
+                    if (indiceSeleccionado >= 0 && indiceSeleccionado < registros.Count)
+                    {
+                        registros.RemoveAt(indiceSeleccionado);
+
+                        ActualizarDataGridView();
+                        LimpiarCampos();
+                        MessageBox.Show("Registro eliminado exitosamente", "Éxito", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
                 }
-                catch
+                catch (Exception ex)
                 {
-                    datos = new List<string>();
+                    MessageBox.Show($"Error al eliminar: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
-
-            // Agregar el nuevo elemento
-            datos.Add(informacion);
-
-            // Guardar el JSON actualizado
-            string jsonContent = System.Text.Json.JsonSerializer.Serialize(datos, new System.Text.Json.JsonSerializerOptions
-            {
-                WriteIndented = true,
-                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-            });
-
-            File.WriteAllText(rutaArchivo, jsonContent);
         }
 
-        /// <summary>
-        /// Elimina líneas específicas de información de un archivo
-        /// Soporta TXT, CSV, JSON y DAT
-        /// </summary>
-        private void EliminarInformacionDelArchivo()
+        private void btnBuscar_Click(object sender, EventArgs e)
         {
+            if (string.IsNullOrEmpty(rutaArchivoActual))
+            {
+                MessageBox.Show("Primero crea o abre un archivo", "Advertencia", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(txtBuscar.Text))
+            {
+                MessageBox.Show("Ingresa un nombre o carrera para buscar", "Advertencia", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             try
             {
-                OpenFileDialog openFileDialog1 = new OpenFileDialog();
-                openFileDialog1.Filter = FILTRO_ARCHIVOS;
-                openFileDialog1.Title = "Seleccionar archivo para eliminar información";
+                string textoBuscar = txtBuscar.Text.Trim().ToLower();
 
-                if (openFileDialog1.ShowDialog() == DialogResult.OK)
+                // Búsqueda secuencial por nombre o carrera
+                var resultados = registros
+                    .Select((registro, index) => new { Registro = registro, Index = index })
+                    .Where(x => x.Registro.Nombre.ToLower().Contains(textoBuscar) || 
+                               x.Registro.Carrera.ToLower().Contains(textoBuscar))
+                    .ToList();
+
+                if (resultados.Any())
                 {
-                    string rutaArchivo = openFileDialog1.FileName;
-                    string extension = Path.GetExtension(rutaArchivo).ToLower();
+                    // Si hay múltiples resultados, mostrar el primero
+                    var primerResultado = resultados.First();
+                    
+                    txtNombre.Text = primerResultado.Registro.Nombre;
+                    txtCarrera.Text = primerResultado.Registro.Carrera;
 
-                    // Leer todas las líneas del archivo
-                    List<string> lineas = new List<string>();
+                    // Seleccionar en el DataGridView
+                    dgvRegistros.ClearSelection();
+                    dgvRegistros.Rows[primerResultado.Index].Selected = true;
+                    dgvRegistros.FirstDisplayedScrollingRowIndex = primerResultado.Index;
 
-                    switch (extension)
+                    string mensaje = $"Se encontraron {resultados.Count} resultado(s):\n\n";
+                    mensaje += $"Mostrando primer resultado:\n";
+                    mensaje += $"Nombre: {primerResultado.Registro.Nombre}\n";
+                    mensaje += $"Carrera: {primerResultado.Registro.Carrera}\n\n";
+                    mensaje += $"Posición en archivo (secuencial): {primerResultado.Index}";
+
+                    if (resultados.Count > 1)
                     {
-                        case ".json":
-                            string contenido = File.ReadAllText(rutaArchivo);
-                            try
-                            {
-                                lineas = System.Text.Json.JsonSerializer.Deserialize<List<string>>(contenido) ?? new List<string>();
-                            }
-                            catch
-                            {
-                                MessageBox.Show("El archivo JSON no tiene el formato esperado.",
-                                              "Error",
-                                              MessageBoxButtons.OK,
-                                              MessageBoxIcon.Error);
-                                return;
-                            }
-                            break;
-                        default:
-                            using (StreamReader reader = new StreamReader(rutaArchivo))
-                            {
-                                string linea;
-                                while ((linea = reader.ReadLine()) != null)
-                                {
-                                    // Para CSV, remover comillas si están presentes
-                                    if (extension == ".csv" && linea.StartsWith("\"") && linea.EndsWith("\""))
-                                    {
-                                        linea = linea.Substring(1, linea.Length - 2).Replace("\"\"", "\"");
-                                    }
-                                    lineas.Add(linea);
-                                }
-                            }
-                            break;
+                        mensaje += $"\n\nSe encontraron {resultados.Count - 1} resultado(s) adicional(es).";
                     }
 
-                    if (lineas.Count == 0)
-                    {
-                        MessageBox.Show("El archivo está vacío.",
-                                       "Información",
-                                       MessageBoxButtons.OK,
-                                       MessageBoxIcon.Information);
-                        return;
-                    }
-
-                    // Mostrar las líneas con numeración
-                    string contenidoMostrar = "Líneas del archivo:\n\n";
-                    for (int i = 0; i < lineas.Count; i++)
-                    {
-                        contenidoMostrar += $"{i + 1}. {lineas[i]}\n";
-                    }
-
-                    MessageBox.Show(contenidoMostrar, "Contenido del archivo", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-                    // Solicitar el número de línea a eliminar
-                    string input = Microsoft.VisualBasic.Interaction.InputBox(
-                        $"Ingrese el número de línea a eliminar (1-{lineas.Count}):\n\nPara eliminar múltiples líneas, sepárelas con comas.\nEjemplo: 1,3,5",
-                        "Eliminar Líneas",
-                        "");
-
-                    if (string.IsNullOrWhiteSpace(input))
-                    {
-                        return;
-                    }
-
-                    // Procesar los números de línea
-                    string[] numerosStr = input.Split(new char[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                    List<int> lineasAEliminar = new List<int>();
-
-                    foreach (string numeroStr in numerosStr)
-                    {
-                        if (int.TryParse(numeroStr.Trim(), out int numeroLinea))
-                        {
-                            if (numeroLinea >= 1 && numeroLinea <= lineas.Count)
-                            {
-                                lineasAEliminar.Add(numeroLinea - 1); // Convertir a índice base 0
-                            }
-                        }
-                    }
-
-                    if (lineasAEliminar.Count == 0)
-                    {
-                        MessageBox.Show("No se ingresaron números de línea válidos.",
-                                       "Advertencia",
-                                       MessageBoxButtons.OK,
-                                       MessageBoxIcon.Warning);
-                        return;
-                    }
-
-                    // Confirmar eliminación
-                    DialogResult resultado = MessageBox.Show(
-                        $"¿Está seguro de eliminar {lineasAEliminar.Count} línea(s)?",
-                        "Confirmar eliminación",
-                        MessageBoxButtons.YesNo,
-                        MessageBoxIcon.Question);
-
-                    if (resultado == DialogResult.Yes)
-                    {
-                        // Ordenar en orden descendente para eliminar correctamente
-                        lineasAEliminar.Sort();
-                        lineasAEliminar.Reverse();
-
-                        foreach (int indice in lineasAEliminar)
-                        {
-                            lineas.RemoveAt(indice);
-                        }
-
-                        // Reescribir el archivo según su tipo
-                        switch (extension)
-                        {
-                            case ".json":
-                                string jsonContent = System.Text.Json.JsonSerializer.Serialize(lineas, new System.Text.Json.JsonSerializerOptions
-                                {
-                                    WriteIndented = true,
-                                    Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-                                });
-                                File.WriteAllText(rutaArchivo, jsonContent);
-                                break;
-                            case ".csv":
-                                using (StreamWriter writer = new StreamWriter(rutaArchivo))
-                                {
-                                    foreach (string linea in lineas)
-                                    {
-                                        string valor = linea;
-                                        if (valor.Contains(',') || valor.Contains('"') || valor.Contains('\n'))
-                                        {
-                                            valor = $"\"{valor.Replace("\"", "\"\"")}\"";
-                                        }
-                                        writer.WriteLine(valor);
-                                    }
-                                }
-                                break;
-                            default:
-                                using (StreamWriter writer = new StreamWriter(rutaArchivo))
-                                {
-                                    foreach (string linea in lineas)
-                                    {
-                                        writer.WriteLine(linea);
-                                    }
-                                }
-                                break;
-                        }
-
-                        MessageBox.Show($"{lineasAEliminar.Count} línea(s) eliminada(s) exitosamente.",
-                                       "Éxito",
-                                       MessageBoxButtons.OK,
-                                       MessageBoxIcon.Information);
-
-                        // Si es el archivo actual, recargar el contenido
-                        if (archivoActual == rutaArchivo)
-                        {
-                            dgvDatos.Rows.Clear();
-                            foreach (string linea in lineas)
-                            {
-                                dgvDatos.Rows.Add(linea);
-                            }
-                        }
-                    }
+                    MessageBox.Show(mensaje, "Registro(s) Encontrado(s)", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else
+                {
+                    MessageBox.Show($"No se encontró ningún registro que contenga: '{txtBuscar.Text}'", "No encontrado", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error al eliminar información del archivo: {ex.Message}",
-                               "Error",
-                               MessageBoxButtons.OK,
-                               MessageBoxIcon.Error);
+                MessageBox.Show($"Error al buscar: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
-        // Event handlers para los nuevos botones
+        private void btnPropiedades_Click(object sender, EventArgs e)
+        {
+            if (string.IsNullOrEmpty(rutaArchivoActual) || !File.Exists(rutaArchivoActual))
+            {
+                MessageBox.Show("No hay ningún archivo abierto", "Advertencia", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            try
+            {
+                FileInfo archivoDatos = new FileInfo(rutaArchivoActual);
+
+                string propiedades = "=== PROPIEDADES DEL ARCHIVO SECUENCIAL ===\n\n";
+                propiedades += $"Nombre: {archivoDatos.Name}\n";
+                propiedades += $"Ruta: {archivoDatos.FullName}\n";
+                propiedades += $"Tamaño: {archivoDatos.Length} bytes ({(archivoDatos.Length / 1024.0):N2} KB)\n";
+                propiedades += $"Fecha Creación: {archivoDatos.CreationTime:dd/MM/yyyy HH:mm:ss}\n";
+                propiedades += $"Última Modificación: {archivoDatos.LastWriteTime:dd/MM/yyyy HH:mm:ss}\n";
+                propiedades += $"Último Acceso: {archivoDatos.LastAccessTime:dd/MM/yyyy HH:mm:ss}\n";
+                propiedades += $"Solo Lectura: {(archivoDatos.IsReadOnly ? "Sí" : "No")}\n";
+                propiedades += $"Extensión: {archivoDatos.Extension}\n\n";
+
+                propiedades += "=== ESTADÍSTICAS ===\n\n";
+                propiedades += $"Total de registros: {registros.Count}\n";
+                propiedades += $"Tamaño promedio por registro: {(registros.Count > 0 ? archivoDatos.Length / registros.Count : 0)} bytes\n";
+                propiedades += $"Tipo de archivo: Secuencial\n";
+
+                MessageBox.Show(propiedades, "Propiedades del Archivo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error al obtener propiedades: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void dgvRegistros_SelectionChanged(object sender, EventArgs e)
+        {
+            if (dgvRegistros.SelectedRows.Count > 0)
+            {
+                DataGridViewRow row = dgvRegistros.SelectedRows[0];
+                txtNombre.Text = row.Cells[0].Value?.ToString() ?? string.Empty;
+                txtCarrera.Text = row.Cells[1].Value?.ToString() ?? string.Empty;
+            }
+        }
+
+        private void LimpiarCampos()
+        {
+            txtNombre.Clear();
+            txtCarrera.Clear();
+            txtBuscar.Clear();
+        }
+
         private void btnCrearCarpeta_Click(object sender, EventArgs e)
         {
-            CrearCarpeta();
+            using FolderBrowserDialog folderBrowserDialog = new FolderBrowserDialog();
+            folderBrowserDialog.Description = "Selecciona la ubicación donde crear la carpeta";
+
+            if (folderBrowserDialog.ShowDialog() == DialogResult.OK)
+            {
+                string nombreCarpeta = Microsoft.VisualBasic.Interaction.InputBox(
+                    "Ingresa el nombre de la nueva carpeta:",
+                    "Crear Carpeta",
+                    "NuevaCarpeta");
+
+                if (!string.IsNullOrWhiteSpace(nombreCarpeta))
+                {
+                    try
+                    {
+                        string rutaNuevaCarpeta = Path.Combine(folderBrowserDialog.SelectedPath, nombreCarpeta);
+
+                        if (Directory.Exists(rutaNuevaCarpeta))
+                        {
+                            MessageBox.Show("La carpeta ya existe", "Advertencia", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            return;
+                        }
+
+                        Directory.CreateDirectory(rutaNuevaCarpeta);
+                        MessageBox.Show($"Carpeta creada exitosamente:\n{rutaNuevaCarpeta}", "Éxito", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Error al crear carpeta: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
         }
 
         private void btnRenombrar_Click(object sender, EventArgs e)
         {
-            RenombrarArchivoOCarpeta();
+            // Mostrar opciones al usuario
+            DialogResult opcion = MessageBox.Show(
+                "¿Deseas renombrar un ARCHIVO?\n\nSí = Archivo\nNo = Carpeta",
+                "Seleccionar Tipo",
+                MessageBoxButtons.YesNoCancel,
+                MessageBoxIcon.Question);
+
+            if (opcion == DialogResult.Cancel)
+                return;
+
+            if (opcion == DialogResult.Yes)
+            {
+                // Renombrar Archivo
+                using OpenFileDialog openFileDialog = new OpenFileDialog();
+                openFileDialog.Title = "Selecciona el archivo a renombrar";
+                openFileDialog.Filter = "Todos los archivos (*.*)|*.*";
+
+                if (openFileDialog.ShowDialog() == DialogResult.OK)
+                {
+                    try
+                    {
+                        string rutaOriginal = openFileDialog.FileName;
+                        string nombreActual = Path.GetFileName(rutaOriginal);
+                        string extension = Path.GetExtension(rutaOriginal);
+                        string nombreSinExtension = Path.GetFileNameWithoutExtension(rutaOriginal);
+
+                        string nuevoNombre = Microsoft.VisualBasic.Interaction.InputBox(
+                            $"Ingresa el nuevo nombre (extensión actual: {extension}):",
+                            "Renombrar Archivo",
+                            nombreSinExtension);
+
+                        if (!string.IsNullOrWhiteSpace(nuevoNombre))
+                        {
+                            string directorio = Path.GetDirectoryName(rutaOriginal) ?? string.Empty;
+                            string nombreCompleto = nuevoNombre.Contains('.') ? nuevoNombre : nuevoNombre + extension;
+                            string nuevaRuta = Path.Combine(directorio, nombreCompleto);
+
+                            if (File.Exists(nuevaRuta))
+                            {
+                                MessageBox.Show("Ya existe un archivo con ese nombre", "Advertencia", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                                return;
+                            }
+
+                            File.Move(rutaOriginal, nuevaRuta);
+
+                            // Actualizar si es el archivo actual
+                            if (rutaArchivoActual == rutaOriginal)
+                            {
+                                rutaArchivoActual = nuevaRuta;
+                                lblArchivoActual.Text = $"Archivo: {Path.GetFileName(nuevaRuta)}";
+                            }
+
+                            MessageBox.Show($"Archivo renombrado exitosamente a:\n{nombreCompleto}", "Éxito", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Error al renombrar archivo: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+            else
+            {
+                // Renombrar Carpeta
+                using FolderBrowserDialog folderBrowserDialog = new FolderBrowserDialog();
+                folderBrowserDialog.Description = "Selecciona la carpeta a renombrar";
+
+                if (folderBrowserDialog.ShowDialog() == DialogResult.OK)
+                {
+                    try
+                    {
+                        string rutaOriginal = folderBrowserDialog.SelectedPath;
+                        string nombreActual = new DirectoryInfo(rutaOriginal).Name;
+
+                        string nuevoNombre = Microsoft.VisualBasic.Interaction.InputBox(
+                            "Ingresa el nuevo nombre de la carpeta:",
+                            "Renombrar Carpeta",
+                            nombreActual);
+
+                        if (!string.IsNullOrWhiteSpace(nuevoNombre))
+                        {
+                            string directorioPadre = Directory.GetParent(rutaOriginal)?.FullName ?? string.Empty;
+                            string nuevaRuta = Path.Combine(directorioPadre, nuevoNombre);
+
+                            if (Directory.Exists(nuevaRuta))
+                            {
+                                MessageBox.Show("Ya existe una carpeta con ese nombre", "Advertencia", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                                return;
+                            }
+
+                            Directory.Move(rutaOriginal, nuevaRuta);
+                            MessageBox.Show($"Carpeta renombrada exitosamente a:\n{nuevoNombre}", "Éxito", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Error al renombrar carpeta: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
         }
 
-        private void btnAgregarInfo_Click(object sender, EventArgs e)
+        private void btnGuardarCambios_Click(object sender, EventArgs e)
         {
-            AgregarInformacionAlArchivo();
+            if (string.IsNullOrEmpty(rutaArchivoActual))
+            {
+                MessageBox.Show("Primero crea o abre un archivo", "Advertencia", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            try
+            {
+                // Escritura secuencial completa del archivo
+                using (StreamWriter sw = new StreamWriter(rutaArchivoActual, false))
+                {
+                    foreach (var registro in registros)
+                    {
+                        sw.WriteLine(registro.ToFileString());
+                    }
+                }
+
+                MessageBox.Show($"Cambios guardados exitosamente\n{registros.Count} registros guardados en formato secuencial", "Éxito", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (IOException ioEx)
+            {
+                MessageBox.Show($"El archivo está siendo usado por otro proceso.\nCierra cualquier programa que esté usando el archivo e intenta nuevamente.\n\nDetalles: {ioEx.Message}", "Error de Acceso", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error al guardar cambios: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
-        private void btnEliminarInfo_Click(object sender, EventArgs e)
+        private void btnCopiarArchivo_Click(object sender, EventArgs e)
         {
-            EliminarInformacionDelArchivo();
+            // Seleccionar el archivo a copiar
+            using OpenFileDialog openFileDialog = new OpenFileDialog();
+            openFileDialog.Title = "Selecciona el archivo a copiar";
+            openFileDialog.Filter = "Todos los archivos (*.*)|*.*|Archivos de datos (*.txt)|*.txt";
+
+            if (openFileDialog.ShowDialog() == DialogResult.OK)
+            {
+                try
+                {
+                    string archivoOrigen = openFileDialog.FileName;
+                    string nombreArchivo = Path.GetFileName(archivoOrigen);
+
+                    // Seleccionar la carpeta de destino
+                    using FolderBrowserDialog folderBrowserDialog = new FolderBrowserDialog();
+                    folderBrowserDialog.Description = "Selecciona la carpeta de destino";
+
+                    if (folderBrowserDialog.ShowDialog() == DialogResult.OK)
+                    {
+                        string carpetaDestino = folderBrowserDialog.SelectedPath;
+                        string archivoDestino = Path.Combine(carpetaDestino, nombreArchivo);
+
+                        // Verificar si el archivo ya existe en el destino
+                        if (File.Exists(archivoDestino))
+                        {
+                            DialogResult sobrescribir = MessageBox.Show(
+                                $"El archivo '{nombreArchivo}' ya existe en la carpeta de destino.\n\n¿Deseas sobrescribirlo?",
+                                "Archivo Existente",
+                                MessageBoxButtons.YesNo,
+                                MessageBoxIcon.Question);
+
+                            if (sobrescribir == DialogResult.No)
+                            {
+                                // Ofrecer renombrar el archivo
+                                string nuevoNombre = Microsoft.VisualBasic.Interaction.InputBox(
+                                    "Ingresa un nuevo nombre para el archivo:",
+                                    "Renombrar Archivo",
+                                    Path.GetFileNameWithoutExtension(nombreArchivo));
+
+                                if (string.IsNullOrWhiteSpace(nuevoNombre))
+                                    return;
+
+                                string extension = Path.GetExtension(nombreArchivo);
+                                nombreArchivo = nuevoNombre + extension;
+                                archivoDestino = Path.Combine(carpetaDestino, nombreArchivo);
+                            }
+                        }
+
+                        // Copiar el archivo
+                        File.Copy(archivoOrigen, archivoDestino, true);
+
+                        MessageBox.Show(
+                            $"Archivo secuencial copiado exitosamente:\n{archivoDestino}",
+                            "Éxito",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Information);
+                    }
+                }
+                catch (IOException ioEx)
+                {
+                    MessageBox.Show(
+                        $"Error al copiar el archivo.\nAsegúrate de que el archivo no esté siendo usado por otro proceso.\n\nDetalles: {ioEx.Message}",
+                        "Error de E/S",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error);
+                }
+                catch (UnauthorizedAccessException authEx)
+                {
+                    MessageBox.Show(
+                        $"No tienes permisos para acceder al archivo o carpeta.\n\nDetalles: {authEx.Message}",
+                        "Error de Permisos",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(
+                        $"Error al copiar archivo: {ex.Message}",
+                        "Error",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error);
+                }
+            }
         }
     }
 }
